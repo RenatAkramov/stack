@@ -4,117 +4,210 @@
 #include <math.h>
 
 typedef double StackElem_t;
+#define DEBUG
 
-
-/*enum Constant
+enum hui
 {
-    ERROR     = 1,
-    OKEY      = 0,
-    STARTSIZE = 10
-};*/
+    OKEY                      = 0,
+    ERROR_CTOR                = 1,
+    ERROR_PUSH                = 2,
+    ERROR_POP                 = 3,
+    ERROR_DESTROY             = 4,
+    ERROR_left_struct_canary  = 5,
+    ERROR_right_struct_canary = 6,
+    ERROR_left_stk_canary     = 7,
+    ERROR_right_stk_canary    = 8,
+    START_SIZE                = 10   //0xDEAD
+};
+
+enum canary
+{
+    left_stk_canary_values           = 0xDEAD,
+    right_stk_canary_values          = 0xDEAD,
+    left_struct_canary_values        = 0xDEAD,
+    right_struct_canary_values       = 0xDEAD
+};
 
 struct Stack_t
 {
-    StackElem_t* data;
-
-    int          size;
-
-    int      capacity;
-
+    StackElem_t  left_struct_canary  = left_struct_canary_values;
+    StackElem_t* data {};
+    int          size                = 0;
+    int          capacity            = 0;
+    int          error_code          = 0;
+    StackElem_t  right_struct_canary = right_struct_canary_values;
 };
 
+int  stackPop(Stack_t* stk);
 
+int  stackPush(Stack_t* stk, StackElem_t new_element);
 
-int stackPop(Stack_t* stk);// убрать элемент в х убрать лишнюю память реалоком на половине
+int  stackCtor(Stack_t* stk); // static
 
-int stackPush(Stack_t* stk);// добавить элкменты добавить память реалоком
+void stackDump(Stack_t* stk);
 
-int stackCtor(Stack_t* stk, int* STARTSIZE);// создать стэк первоночально
+int  stackDestroy(Stack_t* stk);
 
-int stackDump(Stack_t* stk);// куча принтов
+int  stackOkey(Stack_t* stk);
 
-int stackDestroy(Stack_t* stk); //очищает всю память делает фри
-
-int stackOkey(Stack_t* stk);// проверка что все ок куча ифов
-
-
+void stackCheck(Stack_t* stk);
 
 int main()
 {
-    int STARTSIZE = 10;
     Stack_t stk = {};
-    stackCtor(&stk, &STARTSIZE);
-    if (stackOkey(&stk) == 0)
+    stackCtor(&stk);
+    #ifdef DEBUG
+    stackCheck(&stk);
+    #endif
+    StackElem_t new_element = 10;
+    stackPush(&stk, new_element); // РїРµСЂРµРґР°РµС€СЊ Р·РЅР°С‡РµРЅРёРµ
+
+    stackDump(&stk);
+
+    stackPop(&stk);
+
+    stackDump(&stk);
+
+    #ifdef DEBUG
+    stackCheck(&stk);
+    #endif
+
+}
+
+int stackCtor(Stack_t* stk)
+{
+    stk->capacity = START_SIZE;
+
+    stk->data = (double*) calloc(stk->capacity + 2, sizeof(double));
+
+    (stk->data)[-1]= left_stk_canary_values;
+    (stk->data)[stk->capacity + 1] = right_stk_canary_values;
+
+    stk->size = 0;
+
+    if (stk == NULL || stk->data == NULL || stk->size != 0)
     {
-        stackPush(&stk);
-        stackDump(&stk);
-        stackPop(&stk);
-        stackDump(&stk);
+        stk->error_code = ERROR_CTOR;
+        #ifdef DEBUG
+        stackCheck(stk);
+        #endif
     }
     else
     {
-        stackDump(&stk);
-        exit(1);
+        return OKEY;
+        #ifdef DEBUG
+        stackCheck(stk);
+        #endif
     }
-}
-
-int stackCtor(Stack_t* stk, int* STARTSIZE)
-{
-    //int STARTSIZE = 10;
-    stk -> capacity = *STARTSIZE;
-
-    stk -> data = (double*) calloc(stk -> capacity, sizeof(double));
-
-    stk -> size = 0;
 
 }
 
-int stackPush(Stack_t* stk)
+int stackPush(Stack_t* stk, StackElem_t new_element)
 {
-    StackElem_t y = 10.0;
-
-    if (stk -> size == stk -> capacity)
+    #ifdef DEBUG
+    stackCheck(stk);
+    #endif
+    if (stk->size == stk->capacity)
     {
-        stk -> capacity = (stk -> capacity) * 2;
+        (stk->data)[stk->capacity + 1] = 0;
 
-        stk -> data = (StackElem_t*) realloc(stk -> data, stk -> capacity * sizeof(double));
+        stk->capacity *= 2; //a *= 2
+
+        stk->data = (StackElem_t*) realloc(stk->data, (stk->capacity + 2) * sizeof(double));
+
+        (stk->data)[stk->capacity + 1] = right_stk_canary_values;
+        #ifdef DEBUG
+        stackCheck(stk);
+        #endif
     }
 
-    (stk -> data)[stk -> size] = y;
+    (stk -> data)[stk -> size] = new_element;
 
-    stk -> size = stk -> size + 1;
+    int size_old = stk->size;
+
+    stk->size = stk->size + 1;
+
+    if (stk->size - size_old != 1 || (stk -> data)[stk -> size - 1] != new_element || stk->size > stk->capacity)
+    {
+        stk->error_code = ERROR_PUSH;
+    }
+    else
+    {
+        return OKEY;
+    }
+    #ifdef DEBUG
+    stackCheck(stk);
+    #endif
 
 }
 
 int stackPop(Stack_t* stk)
 {
     StackElem_t x = 0;
+    #ifdef DEBUG
+    stackCheck(stk);
+    #endif
 
-    if ( stk -> size == stk -> capacity / 4)
+    if ( stk->size == stk->capacity / 4)
     {
+        (stk->data)[stk->capacity + 1] = 0;
+
         stk -> capacity = (stk -> capacity) / 2;
 
         stk -> data = (StackElem_t*) realloc(stk -> data, stk -> capacity * sizeof(double));
+
+        (stk->data)[stk->capacity + 1] = right_stk_canary_values;
+        #ifdef DEBUG
+        stackCheck(stk);
+        #endif
     }
 
     (stk -> data)[stk -> size] = x;
 
+    int size_old = stk->size;
+
     stk -> size = stk -> size - 1;
 
+    if (size_old - stk->size != 1 || (stk -> data)[size_old] != x)
+    {
+        stk->error_code = ERROR_POP;
+    }
+    else
+    {
+        return OKEY;
+    }
+    #ifdef DEBUG
+    stackCheck(stk);
+    #endif
 }
 
 int stackDestroy(Stack_t* stk)
 {
+    #ifdef DEBUG
+    stackCheck(stk);
+    #endif
     free(stk -> data);
 
-    stk -> size = 0;
+    stk->size = 0xDEAD;
 
-    stk -> capacity = 0;
+    stk->capacity = 0xDEAD;
+
+    if (stk->data != NULL || stk->size != 0xDEAD || stk->capacity !=0xDEAD)
+    {
+        stk->error_code = ERROR_DESTROY;
+    }
+    else
+    {
+        return OKEY;
+    }
+    #ifdef DEBUG
+    stackCheck(stk);
+    #endif
 }
 
-int stackDump(Stack_t* stk)
+void stackDump(Stack_t* stk)
 {
-    printf("Element in data:");
+    printf("Element in data: ");
 
     for (int i = 0; i < stk->size; i++)
     {
@@ -126,19 +219,70 @@ int stackDump(Stack_t* stk)
 
     printf("\n capacity:");
     printf("%d\n", stk->capacity);
+
+    printf("error_code:");
+    printf("%d\n", stk->error_code);
 }
 
 int stackOkey(Stack_t* stk)
 {
-    if (stk->data == NULL)
+    if (stk->error_code == ERROR_PUSH)
     {
-        printf("ERROR 1 data = NULL");
+        printf("ERROR 2 ERROR in PUSH\n");
 
-        return 1;
+        return ERROR_PUSH;
     }
-    else
+    if (stk->error_code == ERROR_CTOR)
     {
-        return 0;
+        printf("ERROR 1 ERROR in CTOR\n");
+
+        return ERROR_CTOR;
+    }
+    if (stk->error_code == ERROR_POP)
+    {
+        printf("ERROR 3 ERROR in POP\n");
+
+        return ERROR_POP;
+    }
+    if (stk->error_code == ERROR_DESTROY)
+    {
+        printf("ERROR 4 ERROR in DESTROY\n");
+        return ERROR_DESTROY;
+    }
+    if (stk->left_struct_canary != left_struct_canary_values)
+    {
+        printf("ERROR 5 ERROR in left_struct_canary ");
+        return ERROR_left_struct_canary;
+    }
+    if (stk->right_struct_canary != right_struct_canary_values)
+    {
+        printf("ERROR 6 ERROR in right_struct_canary ");
+        return ERROR_right_struct_canary;
+    }
+    if ((stk->data)[-1] != left_stk_canary_values)
+    {
+        printf("ERROR 7 ERROR in left_stk_canary ");
+        return ERROR_left_stk_canary;
+    }
+    if ((stk->data)[stk->capacity + 1] != right_stk_canary_values)
+    {
+        printf("ERROR 8 ERROR in right_stk_canary ");
+        return ERROR_right_stk_canary;
+    }
+    if (stk->error_code == 0)
+    {
+        return OKEY;
+    }
+    printf("%d", stk->error_code);
+
+}
+
+void stackCheck(Stack_t* stk)
+{
+    if (stackOkey(stk) != 0)
+    {
+        stackDump(stk);
+        exit(1);
     }
 }
 
