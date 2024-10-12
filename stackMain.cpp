@@ -1,9 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <TXLib.h>
 #include "stack3.h"
 
-#define DEBUG
+// #define DEBUG
 
 int main()
 {
@@ -17,16 +16,23 @@ int main()
     #endif
     
     StackElem_t new_element = 10.878484;
-    stackPush(&stk, new_element, &hash); // передаешь значение
+    for (int i = 0; i < 200; i++)
+    {
+        stackPush(&stk, new_element, &hash);    
+    }
 
     stackDump(&stk, &hash);
 
     #ifdef DEBUG
     stackCheck(&stk, &hash);
     #endif
-
-    stackPop(&stk, &hash);
-
+    stackPush(&stk, new_element, &hash);
+    stackDump(&stk, &hash);
+    //stk.data[0] = 666;
+    for (int i = 0; i < 20; i++)
+    {
+        stackPop(&stk, &hash);
+    }
     stackDump(&stk, &hash);
 
     #ifdef DEBUG

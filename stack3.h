@@ -1,3 +1,6 @@
+#ifndef STACK_
+#define STACK_
+
 typedef double StackElem_t; 
 #define DEBUG
 
@@ -33,7 +36,7 @@ enum OTHERS
 struct Stack_t
 {
     StackElem_t  left_struct_canary  = left_struct_canary_values;
-    StackElem_t* data                  {};
+    StackElem_t* data                {};
     int          size                = 0;
     int          capacity            = 0;
     int          error_code[10]      = {0};
@@ -67,3 +70,5 @@ int compare(StackElem_t a, StackElem_t b);
 unsigned long long hash_func_array(Stack_t* stk);
 
 unsigned long long hash_func_struct(Stack_t* stk);
+
+#endif
